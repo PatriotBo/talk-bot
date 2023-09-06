@@ -2,9 +2,12 @@ package logic
 
 import (
 	"crypto/tls"
+	"net/http"
+	"talk_bot/internal/conf"
+	"talk_bot/internal/service/openai"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 var log *zap.Logger
@@ -19,15 +22,18 @@ func init() {
 }
 
 type TalkBotImpl struct {
-	Engine *gin.Engine
+	Engine    *gin.Engine
+	OpenaiSvr openai.Service
 }
 
 func NewTalkBotImpl() *TalkBotImpl {
-	return &TalkBotImpl{}
+	return &TalkBotImpl{
+		OpenaiSvr: openai.New(conf.GetConfig().OpenAI),
+	}
 }
 
 // Run start to service
-func (m *TalkBotImpl) Run() {
+func (t *TalkBotImpl) Run() {
 	e := gin.Default()
 
 	// 设置HTTPS证书和密钥

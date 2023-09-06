@@ -8,6 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/sashabaranov/go-openai"
+
+	"github.com/patrickmn/go-cache"
 )
 
 var (

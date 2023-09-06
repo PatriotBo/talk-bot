@@ -1,6 +1,10 @@
 package openai
 
-import "context"
+import (
+	"context"
+
+	"github.com/sashabaranov/go-openai"
+)
 
 // Config openai api configuration
 type Config struct {
