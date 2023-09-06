@@ -9,7 +9,7 @@ import (
 	"talk_bot/internal/service/openai"
 )
 
-const configPath = "../config/" // 配置文件目录
+const configPath = "./internal/conf/" // 配置文件目录
 
 var globalConfig *Config
 
@@ -35,6 +35,8 @@ func init() {
 	filename := filepath.Join(configPath, "config.yaml")
 	by, err := os.ReadFile(filename)
 	if err != nil {
+		p, _ := os.Getwd()
+		fmt.Printf("pwd:%s \n", p)
 		panic(fmt.Errorf("read config err:%v", err))
 	}
 

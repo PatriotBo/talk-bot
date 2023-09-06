@@ -9,6 +9,9 @@ import (
 )
 
 func (t *TalkBotImpl) Handle(ctx context.Context, msg *openwechat.Message) error {
+	if msg.IsSendByGroup() {
+		return nil
+	}
 	if msg.IsText() {
 		log.Info(fmt.Sprintf("text message:%s", msg.Content))
 		resp, err := t.OpenaiSvr.ChatCompletion(ctx, generateChatMessages(msg.Content))
