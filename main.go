@@ -13,6 +13,9 @@ func main() {
 	impl := logic.NewTalkBotImpl()
 	// 注册消息处理函数
 	bot.MessageHandler = func(msg *openwechat.Message) {
+		if msg.IsSendByGroup() {
+			return
+		}
 		if err := impl.Handle(msg.Context(), msg); err != nil {
 			fmt.Printf("handle message failed:%v \n", err)
 		}

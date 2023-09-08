@@ -16,6 +16,7 @@ type Config struct {
 type Service interface {
 	ChatCompletion(ctx context.Context, messages []openai.ChatCompletionMessage) (
 		openai.ChatCompletionResponse, error)
+	SpeechToText(ctx context.Context, request *AudioRequest) (string, error)
 }
 
 type serviceImpl struct {

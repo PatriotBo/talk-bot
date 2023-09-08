@@ -23,20 +23,26 @@ func init() {
 }
 
 func (t *TalkBotImpl) Handle(ctx context.Context, msg *openwechat.Message) error {
-	if msg.IsSendByGroup() {
-		return nil
+	switch msg.MsgType {
+	case openwechat.MsgTypeText:
+		return t.onTextMessage(ctx, msg)
+	case openwechat.MsgTypeVoice:
+		return t.onAudioMessage(ctx, msg)
+	default:
+		return fmt.Errorf("not supported message type:%v", msg.MsgType)
 	}
-	if msg.IsText() {
-		log.Info(fmt.Sprintf("text message:%s", msg.Content))
-		resp, err := t.OpenaiSvr.ChatCompletion(ctx, generateChatMessages(msg.FromUserName, msg.Content))
-		if err != nil {
-			msg.ReplyText("something bad happened please talk me later")
-			return err
-		}
-		reply := resp.Choices[0].Message.Content
-		msg.ReplyText(reply)
-		saveMessageContext(msg.FromUserName, msg.Content, reply)
+}
+
+func (t *TalkBotImpl) onTextMessage(ctx context.Context, msg *openwechat.Message) error {
+	log.Info(fmt.Sprintf("text message:%s", msg.Content))
+	resp, err := t.OpenaiSvr.ChatCompletion(ctx, generateChatMessages(msg.FromUserName, msg.Content))
+	if err != nil {
+		_, _ = msg.ReplyText("something bad happened please talk me later")
+		return err
 	}
+	reply := resp.Choices[0].Message.Content
+	_, _ = msg.ReplyText(reply)
+	saveMessageContext(msg.FromUserName, msg.Content, reply)
 	return nil
 }
 
