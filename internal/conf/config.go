@@ -2,14 +2,15 @@ package conf
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/yaml.v3"
 
 	"talk_bot/internal/service/openai"
 )
 
-const configPath = "./internal/conf/" // 配置文件目录
+const configPath = "../config/" // 配置文件目录
 
 var globalConfig *Config
 
@@ -25,10 +26,19 @@ type DBConfig struct {
 	Timeout     int    `yaml:"timeout"` // 超时时间 单位：秒
 }
 
+// OfficialAccountConfig 公众号相关配置
+type OfficialAccountConfig struct {
+	AppID          string `yaml:"appID"`
+	AppSecret      string `yaml:"appSecret"`
+	Token          string `yaml:"token"`
+	EncodingAESKey string `yaml:"encodingAESKey"`
+}
+
 // Config 配置信息
 type Config struct {
-	DB     DBConfig      `yaml:"db"`
-	OpenAI openai.Config `yaml:"openAI"`
+	DB     DBConfig              `yaml:"db"`
+	Wechat OfficialAccountConfig `yaml:"wechat"`
+	OpenAI openai.Config         `yaml:"openAI"`
 }
 
 func init() {
@@ -52,6 +62,11 @@ func GetDSN() string {
 	cfg := globalConfig.DB
 	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&timeout=%ds&loc=Local",
 		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DbName, cfg.Timeout)
+}
+
+// GetWechatConfig ...
+func GetWechatConfig() OfficialAccountConfig {
+	return globalConfig.Wechat
 }
 
 // GetConfig ...

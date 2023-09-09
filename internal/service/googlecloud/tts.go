@@ -3,6 +3,7 @@ package googlecloud
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"google.golang.org/api/option"
 
@@ -26,7 +27,7 @@ type Language string
 const (
 	LanguageEnUs Language = "en-US"
 
-	certFile = "./internal/conf/refined-byte-398412-c0c8f53884e1.json"
+	certPath = "../config/"
 )
 
 type TTSRequest struct {
@@ -36,6 +37,7 @@ type TTSRequest struct {
 
 // TextToSpeech transcripts text to speech using google cloud api.
 func (s *service) TextToSpeech(ctx context.Context, request TTSRequest) ([]byte, error) {
+	certFile := filepath.Join(certPath, "refined-byte-398412-c0c8f53884e1.json")
 	cli, err := tts.NewClient(ctx, option.WithCredentialsFile(certFile))
 	if err != nil {
 		return nil, fmt.Errorf("new client failed:%v", err)

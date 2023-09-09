@@ -1,14 +1,15 @@
-package logic
+package offaccount
 
 import (
-	"context"
 	"fmt"
-	"talk_bot/internal/log"
 	"time"
 
-	"github.com/eatmoreapple/openwechat"
+	"talk_bot/internal/log"
+
+	"github.com/gin-gonic/gin"
 	"github.com/patrickmn/go-cache"
 	"github.com/sashabaranov/go-openai"
+	"github.com/silenceper/wechat/v2/officialaccount/message"
 )
 
 const (
@@ -23,28 +24,32 @@ func init() {
 	conversationRoundHistory = cache.New(roundExpireTime, roundExpireTime)
 }
 
-func (t *TalkBotImpl) Handle(ctx context.Context, msg *openwechat.Message) error {
-	switch msg.MsgType {
-	case openwechat.MsgTypeText:
-		return t.onTextMessage(ctx, msg)
-	case openwechat.MsgTypeVoice:
-		return t.onAudioMessage(ctx, msg)
-	default:
-		return fmt.Errorf("not supported message type:%v", msg.MsgType)
+func (t *TalkBotImpl) Handle(ctx *gin.Context) {
+	server := t.oa.GetServer(ctx.Request, ctx.Writer)
+	server.SkipValidate(false) // 跳过请求合法性检查
+	server.SetMessageHandler(func(msg *message.MixMessage) *message.Reply {
+		switch msg.MsgType {
+		case message.MsgTypeText:
+			return t.onTextMessage(ctx, msg)
+		case message.MsgTypeVoice:
+			return t.onVoiceMessage(ctx, msg)
+		default:
+			return &message.Reply{
+				MsgType: message.MsgTypeText,
+				MsgData: message.NewText(fmt.Sprintf("暂不支持的消息类型 ：%s", msg.MsgType)),
+			}
+		}
+	})
+	if err := server.Serve(); err != nil {
+		log.Errorf("server.Serve failed err:%v", err.Error())
+		return
 	}
-}
-
-func (t *TalkBotImpl) onTextMessage(ctx context.Context, msg *openwechat.Message) error {
-	log.Infof("text message:%s", msg.Content)
-	resp, err := t.OpenaiSvr.ChatCompletion(ctx, generateChatMessages(msg.FromUserName, msg.Content))
-	if err != nil {
-		_, _ = msg.ReplyText("something bad happened please talk me later")
-		return err
+	// 发送回复的消息
+	if err := server.Send(); err != nil {
+		log.Errorf("server.Send failed err:%v", err.Error())
+		return
 	}
-	reply := resp.Choices[0].Message.Content
-	_, _ = msg.ReplyText(reply)
-	saveMessageContext(msg.FromUserName, msg.Content, reply)
-	return nil
+	log.Infof("HandleMessage success %s", server.Token)
 }
 
 func saveMessageContext(userID, prompt, reply string) {
@@ -73,7 +78,12 @@ func saveMessageContext(userID, prompt, reply string) {
 	conversationRoundHistory.Set(userID, rounds, cache.DefaultExpiration)
 }
 
-func generateChatMessages(userID, prompt string) []openai.ChatCompletionMessage {
+var wordLimitPrompt = "Please answer all of my questions in no more than 50 words."
+
+func generateChatMessages(userID, prompt string, limit bool) []openai.ChatCompletionMessage {
+	if limit {
+		prompt = prompt + wordLimitPrompt
+	}
 	promptMessage := openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
 		Content: prompt,
